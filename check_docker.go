@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+        "strconv"
 	"fmt"
 	dockerlib "github.com/fsouza/go-dockerclient"
-	"github.com/newrelic/go_nagios"
+	"github.com/SUNET/go_nagios"
 	"github.com/shenwei356/util/bytesize"
 	"strings"
 	"sync"
@@ -429,7 +430,7 @@ func main() {
 	if cd.ImageId != "" {
 		statuses = append(statuses, cd.CheckImageContainerStatus(cd.ImageId))
 		if cd.CheckRestartCount {
-	  	statuses = append(statuses, cd.CheckImageContainerRestartCount(cd.ImageId))
+		statuses = append(statuses, cd.CheckImageContainerRestartCount(cd.ImageId))
 		}
 		if cd.CheckUptime {
 			statuses = append(statuses, cd.CheckImageContainerUptime(cd.ImageId))
@@ -439,13 +440,16 @@ func main() {
 	if cd.ContainerName != "" {
 		statuses = append(statuses, cd.CheckNamedContainerStatus(cd.ContainerName))
 		if cd.CheckRestartCount {
-	  	statuses = append(statuses, cd.CheckNamedContainerRestartCount(cd.ContainerName))
+		statuses = append(statuses, cd.CheckNamedContainerRestartCount(cd.ContainerName))
 		}
 		if cd.CheckUptime {
 			statuses = append(statuses, cd.CheckNamedContainerUptime(cd.ContainerName))
 		}
 	}
 
-  baseStatus.Aggregate(statuses)
-	nagios.ExitWithStatus(baseStatus)
+	perfdata := nagios.NagiosPerformanceVal{"containers", strconv.Itoa(len(cd.dockerContainersData)), "", "", "", "", ""}
+	perfStatus := nagios.NagiosStatusWithPerformanceData{baseStatus, perfdata}
+
+	perfStatus.Aggregate(statuses)
+	perfStatus.NagiosExit()
 }
